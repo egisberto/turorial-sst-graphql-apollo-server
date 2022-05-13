@@ -12,9 +12,8 @@ export async function connectToDatabase() {
     return cachedDb;
   }
 
-  // const connection = await MongoClient.connect("mongodb+srv://sst-tutorial-user:3RsL6vvk22szh5J2@sst-instance.3uwvs.mongodb.net/demo?retryWrites=true&w=majority");
   const connection = await MongoClient.connect(process.env.MONGODB_URI || '');
-  cachedDb = connection.db("demo");
+  cachedDb = connection.db("demo")
 
   return cachedDb
 }
