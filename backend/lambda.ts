@@ -8,14 +8,51 @@ import { Post } from './types/Post';
 
 const IS_LOCAL = !!process.env.IS_LOCAL;
 
+interface InputUserCreate {
+  user: User
+}
+
+interface InputUserUpdate {
+  userId: string,
+  user: User
+}
+
 const typeDefs = gql`
+  scalar Date
+
+  enum Gender {
+    male
+    female
+    undisclosed
+  }
+
   type User {
-    _id: ID,
+    _id: ID!
+    name: String!
+    email: String!
+    phone: String!
+    gender: Gender
+    birthDate: Date
+  }
+
+  input UserCreateInput {
+    name: String!
+    email: String!
+    phone: String!
+    gender: Gender
+    birthDate: Date
+  }
+
+  input UserUpdateInput {
     name: String
+    email: String
+    phone: String
+    gender: Gender
+    birthDate: Date
   }
 
   type Post {
-    _id: ID,
+    _id: ID
     title: String
     text: String
     author: User
@@ -33,7 +70,8 @@ const typeDefs = gql`
   }
 
   type Mutation {
-    user(name: String): User
+    userCreate(user: UserCreateInput! ): User
+    userUpdate(userId: ID!, user: UserUpdateInput! ): User
     post(title: String, text: String, author: AuthorInput!): Post
   }
 `;
@@ -61,17 +99,25 @@ const resolvers = {
   },
 
   Mutation: {
-    user: async (_: unknown, user: User) => {
+    userCreate: async (_: unknown, { user }: InputUserCreate): Promise<User> => {
       const db = await connectToDatabase();
+      const _id = (await db.collection('users').insertOne({...user})).insertedId
 
-      await db.collection('users').insertOne(user)
-      return user;
+      return { ...user, _id };
+    },
+    userUpdate: async (_: unknown, { userId, user }: InputUserUpdate ): Promise<User> => {
+      const db = await connectToDatabase();
+      const _id = new ObjectId(userId)
+
+      await db.collection('users').updateOne({ _id }, { $set: user })
+      const userFinded = (await db.collection("users").findOne({ _id })) as User
+      return userFinded;
     },
     post: async (_: unknown, post: Post) => {
       const db = await connectToDatabase();
       const user = await db.collection("users").findOne({ _id: new ObjectId(post.author._id) })
 
-      if (!user) throw new Error(`Author ${post.author.name || 'unknow'} (${post.author._id || 'without id'}) not found!`);
+      if (!user) throw new Error(`Author ${post.author.name || 'unknown'} (${post.author._id || 'without id'}) not found!`);
       await db.collection('posts').insertOne(post)
       return post;
     },

@@ -1,6 +1,15 @@
 import { ObjectId } from "mongodb"
 
-export type User = {
-  _id?: ObjectId
-  name?: string
+export enum Gender {
+  male = 'male',
+  female = 'female',
+  undisclosed = 'undisclosed'
+}
+export interface User {
+  _id: ObjectId
+  name: string
+  email: string
+  phone: string
+  gender?: Gender
+  birthDate?: Date
 }
